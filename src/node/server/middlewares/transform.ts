@@ -1,6 +1,11 @@
 import createDebug from 'debug';
 import { ServerContext } from '..';
-import { cleanUrl, isCSSRequest, isJsRequest } from '../../utils';
+import {
+  cleanUrl,
+  isCSSRequest,
+  isImportRequest,
+  isJsRequest,
+} from '../../utils';
 import { NextHandleFunction } from 'connect';
 
 const debug = createDebug('dev');
@@ -38,7 +43,9 @@ export function transformMiddleware(
     if (req.method !== 'GET' || !req.url) return next();
     const { url } = req;
     debug('transformMiddleware: %s', url);
-    if (isJsRequest(url) || isCSSRequest(url)) {
+    if (
+      [isJsRequest, isCSSRequest, isImportRequest].some((test) => test(url))
+    ) {
       const result = await transformRequest(url, serverContext);
       if (!result) return next();
       res.statusCode = 200;

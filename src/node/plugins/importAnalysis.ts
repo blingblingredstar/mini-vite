@@ -26,6 +26,11 @@ export function importAnalysisPlugin(): Plugin {
          */
         const { s: modStart, e: modEnd, n: modName } = importInfo;
         if (!modName) continue;
+        if (modName.endsWith('.svg')) {
+          const resolvedUrl = path.join(path.dirname(id), modName);
+          magicString.overwrite(modStart, modEnd, `${resolvedUrl}?import`);
+          continue;
+        }
         // overwrite path to node_modules/.m-vite/
         if (BARE_IMPORT_RE.test(modName)) {
           const bundlePath = normalizePath(

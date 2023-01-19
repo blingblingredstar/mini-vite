@@ -28,3 +28,10 @@ export const isCSSRequest = (id: string): boolean =>
 
 export const cleanUrl = (url: string): string =>
   url.replace(HASH_RE, '').replace(QUERY_RE, '');
+
+export const isImportRequest = (url: string) => url.endsWith('?import');
+
+export const removeImportQuery = (url: string) => url.replace(/\?import$/, '');
+
+export const getShortName = (file: string, root: string) =>
+  file.startsWith(root + '/') ? path.posix.relative(root, file) : file;
