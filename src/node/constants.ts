@@ -1,3 +1,5 @@
+import path from 'path';
+
 export const EXTERNAL_TYPES = [
   'css',
   'less',
@@ -21,3 +23,6 @@ export const EXTERNAL_TYPES = [
 ] as const;
 
 export const BARE_IMPORT_RE = /^[\w@][^:]/;
+
+/** Default rebuild bundle file path: node_modules/.m-vite */
+export const PRE_BUNDLE_DIR = path.join('node_modules', '.m-vite');

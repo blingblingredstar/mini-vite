@@ -2,6 +2,8 @@ import { build } from 'esbuild';
 import path from 'path';
 import { scanPlugin } from './scanPlugin';
 import { green } from 'picocolors';
+import { PRE_BUNDLE_DIR } from '../constants';
+import { preBundlePlugin } from './preBundlePlugin';
 
 export async function optimize(root: string) {
   // 1. Find entry.
@@ -22,4 +24,13 @@ export async function optimize(root: string) {
       .join('\n')}`,
   );
   // 3. Build pre deps
+  await build({
+    entryPoints: [...deps],
+    write: true,
+    bundle: true,
+    format: 'esm',
+    splitting: true,
+    outdir: path.resolve(root, PRE_BUNDLE_DIR),
+    plugins:[preBundlePlugin(deps)]
+  })
 }
