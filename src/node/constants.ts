@@ -24,5 +24,5 @@ export const EXTERNAL_TYPES = [
 
 export const BARE_IMPORT_RE = /^[\w@][^:]/;
 
-/** Default rebuild bundle file path: node_modules/.m-vite */
+/** Default rebuild bundle file path: `node_modules/.m-vite` */
 export const PRE_BUNDLE_DIR = path.join('node_modules', '.m-vite');
