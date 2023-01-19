@@ -36,7 +36,6 @@ export function transformMiddleware(
 ): NextHandleFunction {
   return async (req, res, next) => {
     if (req.method !== 'GET' || !req.url) return next();
-
     const { url } = req;
     debug('transformMiddleware: %s', url);
     if (isJsRequest(url)) {
@@ -46,5 +45,6 @@ export function transformMiddleware(
       res.setHeader('Content-Type', 'application/javascript');
       return res.end(result.code);
     }
+    next();
   };
 }
