@@ -6,6 +6,7 @@ import { blue, green } from 'picocolors';
 import { optimize } from '../optimizer/index';
 import { PluginContainer, createPluginContainer } from '../pluginContainer';
 import { Plugin, resolvePlugins } from '../plugin';
+import { indexHtmlMiddleware } from './middlewares/indexHtml';
 
 export interface ServerContext {
   root: string;
@@ -33,6 +34,8 @@ export async function startDevServer() {
       await plugin.configureServer(serverContext);
     }
   });
+
+  app.use(indexHtmlMiddleware(serverContext));
 
   app.listen(3000, async () => {
     await optimize(root);
