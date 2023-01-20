@@ -1,7 +1,7 @@
 import { init, parse } from 'es-module-lexer';
 import { Plugin } from '../plugin';
 import { ServerContext } from '../server';
-import { isJsRequest, normalizePath } from '../utils';
+import { cleanUrl, getShortName, isJsRequest, normalizePath } from '../utils';
 import MagicString from 'magic-string';
 import { BARE_IMPORT_RE, PRE_BUNDLE_DIR } from '../constants';
 import path from 'path';
@@ -22,6 +22,17 @@ export function importAnalysisPlugin(): Plugin {
       const { moduleGraph } = serverContext;
       const curMod = moduleGraph.getModuleById(id);
       const importedModules = new Set<string>();
+      const resolve = async (id: string, importer?: string) => {
+        const resolved = await serverContext.pluginContainer.resolveId(
+          id,
+          importer && normalizePath(importer),
+        );
+        if (!resolved) return;
+        const cleanedId = cleanUrl(resolved.id);
+        const mod = moduleGraph.getModuleById(cleanedId);
+        const resolvedId = `/${getShortName(resolved.id, serverContext.root)}`;
+        return resolvedId;
+      };
       for (const importInfo of imports) {
         /**
          * @example const str = `import react from react`
@@ -43,9 +54,9 @@ export function importAnalysisPlugin(): Plugin {
           importedModules.add(bundlePath);
         } else if (modName.startsWith('.') || modName.startsWith('/')) {
           //@ts-ignore
-          const resolved = await this.resolve(modName, id);
+          const resolved = await resolve(modName, id);
           if (resolved) {
-            magicString.overwrite(modStart, modEnd, resolved.id);
+            magicString.overwrite(modStart, modEnd, resolved);
             importedModules.add(resolved);
           }
         }

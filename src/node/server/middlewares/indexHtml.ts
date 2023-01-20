@@ -14,7 +14,7 @@ export function indexHtmlMiddleware(
       if (await pathExists(indexHtmlPath)) {
         const rawHtml = await readFile(indexHtmlPath, 'utf-8');
         let html = rawHtml;
-        serverContext.plugins.forEach(async (plugin) => {
+        await serverContext.plugins.forEach(async (plugin) => {
           if (plugin.transformIndexHtml) {
             html = await plugin.transformIndexHtml(html);
           }

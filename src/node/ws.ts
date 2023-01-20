@@ -3,9 +3,8 @@ import { WebSocketServer } from 'ws';
 import { HMR_PORT } from './constants';
 import { red } from 'picocolors';
 
-type WebSocketSendPayload = Record<string, any>;
 export type WebSocketServerInstance = {
-  send: (payload: WebSocketSendPayload) => void;
+  send: (payload: WebSocketData) => void;
   close: VoidFunction;
 };
 
