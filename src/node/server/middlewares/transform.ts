@@ -17,8 +17,12 @@ export async function transformRequest(
   url: string,
   serverContext: ServerContext,
 ) {
-  const { pluginContainer } = serverContext;
+  const { pluginContainer, moduleGraph } = serverContext;
   url = cleanUrl(url);
+  let mod = await moduleGraph.getModuleByUrl(url);
+  if (mod?.transformResults) {
+    return mod.transformResults;
+  }
   const resolvedResult = await pluginContainer.resolveId(url);
   let transformResult;
   if (resolvedResult?.id) {
@@ -26,12 +30,16 @@ export async function transformRequest(
     if (typeof code !== 'string' && code) {
       code = code.code;
     }
+    mod = await moduleGraph.ensureEntryFromUrl(url);
     if (code) {
       transformResult = await pluginContainer.transform(
         code,
         resolvedResult.id,
       );
     }
+  }
+  if (mod) {
+    mod.transformResults = transformResult;
   }
   return transformResult;
 }

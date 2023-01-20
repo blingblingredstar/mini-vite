@@ -19,6 +19,9 @@ export function importAnalysisPlugin(): Plugin {
       await init;
       const [imports] = parse(code);
       const magicString = new MagicString(code);
+      const { moduleGraph } = serverContext;
+      const curMod = moduleGraph.getModuleById(id);
+      const importedModules = new Set<string>();
       for (const importInfo of imports) {
         /**
          * @example const str = `import react from react`
@@ -37,15 +40,17 @@ export function importAnalysisPlugin(): Plugin {
             path.join('/', PRE_BUNDLE_DIR, `${modName}.js`),
           );
           magicString.overwrite(modStart, modEnd, bundlePath);
+          importedModules.add(bundlePath);
         } else if (modName.startsWith('.') || modName.startsWith('/')) {
           //@ts-ignore
           const resolved = await this.resolve(modName, id);
           if (resolved) {
             magicString.overwrite(modStart, modEnd, resolved.id);
+            importedModules.add(resolved);
           }
         }
       }
-
+      moduleGraph.updateModuleInfo(curMod, importedModules);
       return {
         code: magicString.toString(),
         map: magicString.generateMap(),
