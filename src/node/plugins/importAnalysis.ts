@@ -1,9 +1,19 @@
 import { init, parse } from 'es-module-lexer';
 import { Plugin } from '../plugin';
 import { ServerContext } from '../server';
-import { cleanUrl, getShortName, isJsRequest, normalizePath } from '../utils';
+import {
+  cleanUrl,
+  getShortName,
+  isInternalRequest,
+  isJsRequest,
+  normalizePath,
+} from '../utils';
 import MagicString from 'magic-string';
-import { BARE_IMPORT_RE, PRE_BUNDLE_DIR } from '../constants';
+import {
+  BARE_IMPORT_RE,
+  CLIENT_PUBLIC_PATH,
+  PRE_BUNDLE_DIR,
+} from '../constants';
 import path from 'path';
 
 export function importAnalysisPlugin(): Plugin {
@@ -15,7 +25,7 @@ export function importAnalysisPlugin(): Plugin {
     },
     async transform(code, id) {
       // only transform js file
-      if (!isJsRequest(id)) return null;
+      if (!isJsRequest(id) || isInternalRequest(id)) return null;
       await init;
       const [imports] = parse(code);
       const magicString = new MagicString(code);
@@ -30,7 +40,10 @@ export function importAnalysisPlugin(): Plugin {
         if (!resolved) return;
         const cleanedId = cleanUrl(resolved.id);
         const mod = moduleGraph.getModuleById(cleanedId);
-        const resolvedId = `/${getShortName(resolved.id, serverContext.root)}`;
+        let resolvedId = `/${getShortName(resolved.id, serverContext.root)}`;
+        if (mod && mod.lastHmrTimestamp > 0) {
+          resolvedId += `?t=${mod.lastHmrTimestamp}`;
+        }
         return resolvedId;
       };
       for (const importInfo of imports) {
@@ -53,7 +66,6 @@ export function importAnalysisPlugin(): Plugin {
           magicString.overwrite(modStart, modEnd, bundlePath);
           importedModules.add(bundlePath);
         } else if (modName.startsWith('.') || modName.startsWith('/')) {
-          //@ts-ignore
           const resolved = await resolve(modName, id);
           if (resolved) {
             magicString.overwrite(modStart, modEnd, resolved);
@@ -61,6 +73,17 @@ export function importAnalysisPlugin(): Plugin {
           }
         }
       }
+
+      if (!id.includes('node_modules')) {
+        curMod &&
+          magicString.prepend(
+            `import { createHotContext as __vite__createHotContext } from "${CLIENT_PUBLIC_PATH}";` +
+              `\nimport.meta.hot = __vite__createHotContext(${JSON.stringify(
+                cleanUrl(curMod.url),
+              )});\n`,
+          );
+      }
+
       curMod && moduleGraph.updateModuleInfo(curMod, importedModules);
       return {
         code: magicString.toString(),

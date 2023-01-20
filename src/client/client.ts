@@ -16,7 +16,7 @@ const handleMessage = async (payload: WebSocketData) => {
     case 'update':
       payload.updates.forEach((update) => {
         if (update.type === 'js-update') {
-          // TODO
+          fetchUpdate(update);
         }
       });
       break;
@@ -24,3 +24,77 @@ const handleMessage = async (payload: WebSocketData) => {
       console.error('unknown websocket message');
   }
 };
+
+interface HotModule {
+  id: string;
+  callbacks: HotCallback[];
+}
+
+interface HotCallback {
+  deps: string[];
+  fn: (modules: object[]) => void;
+}
+
+const hotModulesMap = new Map<string, HotModule>();
+const pruneModuleMap = new Map<string, ((data: any) => void) | Promise<void>>();
+
+export const createHotContext = (ownerPath: string) => {
+  const mod = hotModulesMap.get(ownerPath);
+  if (mod) {
+    mod.callbacks = [];
+  }
+
+  const acceptDeps = (deps: string[], callback: any) => {
+    const mod: HotModule = hotModulesMap.get(ownerPath) || {
+      id: ownerPath,
+      callbacks: [],
+    };
+    mod.callbacks.push({
+      deps,
+      fn: callback,
+    });
+    hotModulesMap.set(ownerPath, mod);
+  };
+
+  return {
+    accept(deps: any, callback?: any) {
+      if (typeof deps === 'function' || !deps) {
+        acceptDeps([ownerPath], ([mod]: any) => deps && deps(mod));
+      }
+    },
+
+    prune(cb: (data: any) => void) {
+      pruneModuleMap.set(ownerPath, cb);
+    },
+  };
+};
+
+async function fetchUpdate({ path, timestamp }: HmrUpdateData) {
+  const mod = hotModulesMap.get(path);
+  if (!mod) return;
+
+  const moduleMap = new Map();
+  const modulesToUpdate = new Set<string>();
+  modulesToUpdate.add(path);
+
+  await Promise.all(
+    [...modulesToUpdate].map(async (dep) => {
+      const [path, query] = dep.split('?');
+      try {
+        const newMod = await import(
+          path + `?t=${timestamp}${query ? `&${query}` : ''}`
+        );
+        moduleMap.set(dep, newMod);
+      } catch (e) {
+        console.error(e);
+      }
+    }),
+  );
+
+  return () => {
+    for (const { deps, fn } of mod.callbacks) {
+      fn(deps.map((dep) => moduleMap.get(dep)));
+    }
+    console.log(`[mini vite] hot updated: ${path}`);
+  };
+}
