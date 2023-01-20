@@ -58,7 +58,7 @@ export function transformMiddleware(
       if (!result) return next();
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/javascript');
-      return res.end(result.code);
+      return res.end(typeof result === 'string' ? result : result.code);
     }
     next();
   };
