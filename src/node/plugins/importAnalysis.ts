@@ -50,7 +50,7 @@ export function importAnalysisPlugin(): Plugin {
           }
         }
       }
-      moduleGraph.updateModuleInfo(curMod, importedModules);
+      curMod && moduleGraph.updateModuleInfo(curMod, importedModules);
       return {
         code: magicString.toString(),
         map: magicString.generateMap(),
