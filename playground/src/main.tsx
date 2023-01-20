@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-const App = () => <div>hello mini vite</div>;
+const App = () => <div>hello bbb vite</div>;
 
 ReactDOM.render(<App />, document.getElementById('root'));
 

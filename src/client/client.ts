@@ -98,3 +98,26 @@ async function fetchUpdate({ path, timestamp }: HmrUpdateData) {
     console.log(`[mini vite] hot updated: ${path}`);
   };
 }
+
+const styleSheetsMap = new Map<string, HTMLStyleElement>();
+
+export function updateStyle(id: string, content: string) {
+  let style = styleSheetsMap.get(id);
+  if (!style) {
+    style = document.createElement('style');
+    style.setAttribute('type', 'text/css');
+    style.innerHTML = content;
+    document.head.appendChild(style);
+  } else {
+    style.innerHTML = content;
+  }
+  styleSheetsMap.set(id, style);
+}
+
+export function removeStyle(id: string) {
+  const style = styleSheetsMap.get(id);
+  if (style) {
+    document.head.removeChild(style);
+  }
+  styleSheetsMap.delete(id);
+}
